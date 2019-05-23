@@ -73,6 +73,7 @@
 			alert('Can`t get elemend with ID [' + name + ']');
 	}
 
+
 	function log_e(msg)	{
 		log('E:' + msg);
 	}
@@ -87,6 +88,11 @@
 	function on_message(event) { 
 		var msg = event.data;
 		log("Message is received: " + msg);
+		obj = JSON.parse(msg)
+		log("Name: " + obj.name);
+		log("Age: " + obj.age);
+		log("City: " + obj.city);
+		log("IDs: " + obj.IDs);
 	};
 
 
@@ -97,10 +103,10 @@
 
 	function on_error(event) {
 		log('Error has occured:');
-		log('  message: ' + event.message);
-		log('  filename: ' + event.filename);
-		log('  lineno: ' + event.lineno + ' colno: ' + event.colno);
-		log('  error: ' + event.error);
+		log('. message: ' + event.message);
+		log('. filename: ' + event.filename);
+		log('. lineno: ' + event.lineno + ' colno: ' + event.colno);
+		log('. error: ' + event.error);
 	};
 
 	function on_mouse_enter(row, col) {
