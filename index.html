@@ -45,7 +45,7 @@
 		margin: 0px;
 	}
 
-	#greed {
+	#grid {
 		margin: auto;
 		padding: 15px;
 		width: 70%;
@@ -61,6 +61,8 @@
 
 <script>
 
+	// ------------------------------------------------------------------
+	// Log
 	function log(msg, clean = false) {
 		name = 'output'
 		output = document.getElementById(name);
@@ -73,33 +75,35 @@
 			alert('Can`t get elemend with ID [' + name + ']');
 	}
 
-
 	function log_e(msg)	{
 		log('E:' + msg);
 	}
 
-
+	// ------------------------------------------------------------------
+	// WebSokets
 	function on_open(){
 		web_socket.send('Prima');
 		log('Message is sent...');
 	};
 
-
 	function on_message(event) { 
 		var msg = event.data;
-		log("Message is received: " + msg);
-		obj = JSON.parse(msg)
-		log("Name: " + obj.name);
-		log("Age: " + obj.age);
-		log("City: " + obj.city);
-		log("IDs: " + obj.IDs);
-	};
+		//log("Message is received: " + msg);
 
+		playfield = JSON.parse(msg)
+		for (row = 0; row < 9; row++) {
+			for (col = 0; col < 9; col++) {
+				cell = playfield.cells[row][col];
+				AAAA(row, col, cell);
+			}
+		}
+		log('Cells: ' + playfield.cells.length);
+		log('Test: ' + playfield.cells[4][4].value);
+	};
 
 	function on_close() { 
 		log("Connection is closed...");
 	};
-
 
 	function on_error(event) {
 		log('Error has occured:');
@@ -109,6 +113,8 @@
 		log('. error: ' + event.error);
 	};
 
+	// ------------------------------------------------------------------
+	// Mouse Events
 	function on_mouse_enter(row, col) {
 		for (r = 0; r < 9; ++r) {
 			for (c = 0; c < 9; ++c) {
@@ -126,6 +132,7 @@
 			}
 		}
 	}
+
 	function on_mouse_leave(row, col) {
 		for (r = 0; r < 9; ++r) {
 			for (c = 0; c < 9; ++c) {
@@ -142,7 +149,54 @@
 		}
 	}
 
-	function on_off(row, col, style) {
+	var last_row = null;
+	var last_col = null;
+
+	function on_click(row, col) {
+		if (last_row != null && last_col != null)
+			switch_number_or_tips(last_row, last_col, false);
+		last_row = row;
+		last_col = col;
+		switch_number_or_tips(last_row, last_col, true);
+	}
+
+	// ------------------------------------------------------------------
+	// Keyboard Events
+	function on_key_down(event) {
+		log('Key Down: ' + event.code + ' ' + event.which + ' ' + event.keyCode);
+	}
+
+	// ------------------------------------------------------------------
+	// Reaction on incomming JSON
+	function AAAA(row, col, cell) {
+		number_id = 'number_' + row + '_' + col;
+		number_div = document.getElementById(number_id);
+		if (!number_div) {
+			log_e('Can`t find ' + number_id + ' element');
+			return false;
+		}
+		tips_id = 'tips_' + row + '_' + col;
+		tips_div = document.getElementById(tips_id);
+		if (!tips_div) {
+			log_e('Can`t find ' + tips_id + ' element');
+			return false;
+		}
+
+		if (1 <= cell.value && cell.value <= 9) {
+			tips_div.style.display = 'none';
+			number_div.style.display = '';
+			number_div.innerHTML = cell.value;
+		} else {
+			number_div.style.display = 'none';
+			tips_div.style.display = '';
+			tips_div.innerHTML = get_tips(cell.options);
+		}
+
+	}
+
+	// Switch between number and tips
+	// Sould be removed because it is created just for test
+	function switch_number_or_tips(row, col, style) {
 		number_id = 'number_' + row + '_' + col;
 		number_div = document.getElementById(number_id);
 		if (!number_div) {
@@ -160,25 +214,14 @@
 		tips_div.style.display = (style?'none':'');
 	}
 
-	var last_row = null;
-	var last_col = null;
-
-	function on_click(row, col) {
-		if (last_row != null && last_col != null)
-			on_off(last_row, last_col, false);
-		last_row = row;
-		last_col = col;
-		on_off(last_row, last_col, true);
-	}
-
-	function create_greed() {
-		greed = document.getElementById('greed');
-		if (!greed) {
-			log_e("Can't find the greed div");
+	function create_grid() {
+		grid = document.getElementById('grid');
+		if (!grid) {
+			log_e("Can't find the grid div");
 			return;
 		}
 
-		greed.innerHTML = '';
+		grid.innerHTML = '';
 
 		sub_cell = function(row, col) {
 			sub_str = '<table class="internal">';
@@ -187,8 +230,8 @@
 				for (c = 0; c < 3; ++c) {
 					s1 = (r + row) + '_' + (c + col);
 					s2 = (r + row) + ',' + (c + col);
-					number_div = '<div id="number_' + s1 + '" style="display:none;">3</div>';
-					tips_div = '<div id="tips_' + s1 + '">' + get_tips('367') + '</div>';
+					number_div = '<div id="number_' + s1 + '" style="display:none;">0</div>';
+					tips_div = '<div id="tips_' + s1 + '">' + get_tips('0') + '</div>';
 					sub_str += '<td class="internal" id="cell_' + s1 + '"'
 						+ 'onmouseenter="on_mouse_enter(' + s2 + ')"'
 						+ 'onmouseleave="on_mouse_leave(' + s2 + ')"'
@@ -211,25 +254,7 @@
 		}
 		str += '</table>';
 
-		greed.innerHTML += str;
-	}
-
-
-	function main(host, port) {
-		log('Here we go', true);
-
-		create_greed();
-
-		if (!("WebSocket" in window)) {
-			log_e('WebSocket NOT supported by your Browser!');
-			return;
-		}
-
-		web_socket = new WebSocket('ws:/' + host + ':' + port);
-		web_socket.onopen = on_open;
-		web_socket.onmessage = on_message;
-		web_socket.onclose = on_close;
-		web_socket.onerror = on_error;
+		grid.innerHTML += str;
 	}
 
 	function get_tips(digits) {
@@ -245,15 +270,27 @@
 		return result;
 	}
 
-	function on_key_down(event) {
-		log('Key Down: ' + event.code + ' ' + event.which + ' ' + event.keyCode);
-	}
+	function main(host, port) {
+		log('Here we go', true);
 
+		create_grid();
+
+		if (!("WebSocket" in window)) {
+			log_e('WebSocket NOT supported by your Browser!');
+			return;
+		}
+
+		web_socket = new WebSocket('ws:/' + host + ':' + port);
+		web_socket.onopen = on_open;
+		web_socket.onmessage = on_message;
+		web_socket.onclose = on_close;
+		web_socket.onerror = on_error;
+	}
 
 </script>
 </head>
 
 <body onload='main("localhost", 8765)' onkeydown='on_key_down(event)'>
-	<div id="greed">Greed</div>
+	<div id="grid">Grid</div>
 	<div id="output">Log</div>
 </body>
